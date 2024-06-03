@@ -1,91 +1,3 @@
-// const MovieList = require('../models/MovieList');
-// const Movie = require('../models/Movie');
-
-// exports.createList = async (req, res) => {
-//     const { name } = req.body;
-//     const userId = req.user.id;
-//     // Convert string value to boolean
-//     // Assuming req.body.isPublic contains the value from the form
-// const isPublic = req.body.isPublic === 'on' ? true : false;
-
-
-//     try {
-//         const list = new MovieList({ user: userId, name, isPublic });
-//         await list.save();
-//         res.redirect('/movies/home');
-//     } catch (err) {
-//         console.log(err);
-//         res.status(500).send('Server error');
-//     }
-// };
-
-// exports.addMovieToList = async (req, res) => {
-//     const { listId, movieId } = req.body;
-
-//     try {
-//         const movie = await Movie.findOne({ imdbID: movieId });
-//         const list = await MovieList.findById(listId);
-//         console.log(listId);    
-//         console.log(movieId);
-//         if (!list) {
-//             return res.status(404).send('List not found');
-//         }
-
-//         list.movies.push(movie);
-//         await list.save();
-//         res.redirect(`/lists/${listId}`);
-//     } catch (err) {
-//         console.log(err);
-//         res.status(500).send('Server error');
-//     }
-// };
-
-// exports.removeMovieFromList = async (req, res) => {
-//     const { listId, movieId } = req.body;
-
-//     try {
-//         const list = await MovieList.findById(listId);
-
-//         if (!list) {
-//             return res.status(404).send('List not found');
-//         }
-
-//         list.movies = list.movies.filter(movie => movie.toString() !== movieId);
-//         await list.save();
-//         res.redirect(`/lists/${listId}`);
-//     } catch (err) {
-//         console.log(err);
-//         res.status(500).send('Server error');
-//     }
-// };
-
-// exports.getUserLists = async (req, res) => {
-//     const userId = req.user.id;
-
-//     try {
-//         const lists = await MovieList.find({ user: userId });
-//         res.render('movies/home', { lists });
-//     } catch (err) {
-//         console.log(err);
-//         res.status(500).send('Server error');
-//     }
-// };
-
-// exports.getListById = async (req, res) => {
-//     const { id } = req.params;
-
-//     try {
-//         const list = await MovieList.findById(id).populate('movies');
-//         if (!list) {
-//             return res.status(404).send('List not found');
-//         }
-//         res.render('movies/list', { list });
-//     } catch (err) {
-//         console.log(err);
-//         res.status(500).send('Server error');
-//     }
-// };
-
 const MovieList = require('../models/MovieList');
 const Movie = require('../models/Movie');
 
@@ -163,13 +75,22 @@ exports.getUserLists = async (req, res) => {
     const userId = req.user.id;
 
     try {
-        const lists = await MovieList.find({ user: userId });
+        // Fetch the current user's lists (both public and private)
+        const userLists = await MovieList.find({ user: userId });
+
+        // Fetch public lists created by other users
+        const publicLists = await MovieList.find({ user: { $ne: userId }, isPublic: true });
+
+        // Combine both lists
+        const lists = [...userLists, ...publicLists];
+
         res.render('movies/home', { lists });
     } catch (err) {
         console.log(err);
         res.status(500).send('Server error');
     }
 };
+
 
 exports.getListById = async (req, res) => {
     const { id } = req.params;
